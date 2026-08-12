@@ -45,32 +45,26 @@ GENDERED_PREFIXES = {"dr.", "prof.", "eng."}
 
 
 STYLE_RULES = """\
-You are transliterating personal names between English and Arabic for a \
-customer-facing greeting. Precision matters: a wrong letter is a wrong name.
-
-Rules:
-- Preserve Arabic orthography exactly: keep hamza forms (أ إ آ ء ؤ ئ) and \
-ta marbuta (ة) where they belong. Do not simplify or drop them.
-- Render the Arabic definite article "ال" as "Al-" (capital A, hyphen, no \
-space) when transliterating to English, e.g. البلوي -> Al-Balawi.
-- Preserve name particles as separate words: "bin", "ibn", "Abu" stay \
-lowercase/capitalised as conventionally written and are not merged into \
-the following word.
-- For long Arabic vowel sounds, prefer the double-letter English spelling \
-over the single-letter one: "Kareem" not "Karim", "Waleed" not "Walid", \
-"Al-Ameen" not "Al-Amin", "Jameel" not "Jamil".
-- A name-final Arabic ة (ta marbuta) transliterates to a plain final "-a", \
-never "-ah": "Hamza" not "Hamzah", "Sara" not "Sarah", "Baraka" not "Barakah".
-- Compound names stay one unbroken word, never split with a space at the \
-join: "Abdullah" not "Abd Allah", "Abdulrahman" not "Abd Al-Rahman", \
-"Nasrallah" not "Nasr Allah", "Lockwood" -> "لوكوود" not "لوك وود".
-- When a foreign name starts with a long open "aa" sound, render it with \
-آ (alif+madda), not a plain أ: "Amber" -> "آمبر", "Iris" -> "آيريس".
-- Output only the transliteration/translation itself: no explanation, no \
-transliteration marks, no alternate spellings.
-- If a name has no accepted rendering in the target script, return your \
-best-supported transliteration -- never leave the field blank.
+Transliterate personal names between Arabic and English for a customer-facing \
+greeting. A wrong letter is a wrong name.
+- Keep hamza (أ إ آ ء ؤ ئ) and ta marbuta (ة) exactly as written; never drop \
+or simplify.
+- ال -> "Al-" (English output only; capital A, hyphen, no space): البلوي -> \
+Al-Balawi.
+- Keep "bin", "ibn", "Abu" as separate words -- never merge into the next word.
+- Long vowels: double-letter spelling, not single: Kareem, Waleed, Al-Ameen, \
+Jameel (not Karim, Walid, Al-Amin, Jamil).
+- Final ة -> "-a", never "-ah": Sara, Hamza, Baraka (not Sarah, Hamzah, \
+Barakah).
+- Compound names stay one word: Abdullah, Abdulrahman, Nasrallah; Lockwood -> \
+لوكوود (not لوك وود).
+- Foreign initial long "aa" -> آ: Amber -> آمبر, Iris -> آيريس.
+- Output only the transliteration itself -- no notes, no alternates.
+- Never leave a field blank; give your best-supported guess.
 """
+
+
+MAX_OUTPUT_TOKENS = 4096
 
 RESPONSE_SCHEMA = {
     "type": "object",
@@ -220,6 +214,7 @@ def main():
                             "thinkingConfig": {"thinkingLevel": "MINIMAL"},
                             "responseMimeType": "application/json",
                             "responseSchema": RESPONSE_SCHEMA,
+                            "maxOutputTokens": MAX_OUTPUT_TOKENS,
                         },
                     },
                 }, ensure_ascii=False) + "\n")

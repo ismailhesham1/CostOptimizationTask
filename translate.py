@@ -8,7 +8,7 @@ import os
 import time
 
 from preprocess import (norm_key, load_cache, save_cache, MODEL_NAME,
-                          RESPONSE_SCHEMA)
+                          RESPONSE_SCHEMA, MAX_OUTPUT_TOKENS)
 
 
 PRICE_IN = 0.25
@@ -85,7 +85,8 @@ def run_sync(client, direction, chunks):
                 model=MODEL_NAME, contents=prompt,
                 config={"thinkingConfig": {"thinkingLevel": "MINIMAL"},
                          "responseMimeType": "application/json",
-                         "responseSchema": RESPONSE_SCHEMA})
+                         "responseSchema": RESPONSE_SCHEMA,
+                         "maxOutputTokens": MAX_OUTPUT_TOKENS})
             out[key] = json.loads(resp.text)
             u = resp.usage_metadata
             usage.append({

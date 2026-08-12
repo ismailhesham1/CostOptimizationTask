@@ -1,0 +1,122 @@
+[
+  {
+    "model": "gemini-3.1-flash-lite",
+    "requests": 11,
+    "tokens_in": 15103,
+    "tokens_out": 12942,
+    "tokens_thinking": 0,
+    "cost_usd": 0.023189,
+    "report": {
+      "overall": {
+        "n": 487,
+        "hits": 422,
+        "accuracy": 0.86652977412731
+      },
+      "ar2en": {
+        "n": 185,
+        "hits": 145,
+        "accuracy": 0.7837837837837838
+      },
+      "en2ar": {
+        "n": 302,
+        "hits": 277,
+        "accuracy": 0.9172185430463576
+      },
+      "en2ar_critical": {
+        "n": 54,
+        "hits": 47,
+        "accuracy": 0.8703703703703703
+      },
+      "particle": {
+        "n": 118,
+        "hits": 98,
+        "accuracy": 0.8305084745762712
+      },
+      "singleton": {
+        "n": 74,
+        "hits": 60,
+        "accuracy": 0.8108108108108109
+      }
+    }
+  },
+  {
+    "model": "gemini-3.5-flash-lite",
+    "requests": 11,
+    "tokens_in": 15103,
+    "tokens_out": 14983,
+    "tokens_thinking": 0,
+    "cost_usd": 0.041988,
+    "report": {
+      "overall": {
+        "n": 487,
+        "hits": 415,
+        "accuracy": 0.8521560574948666
+      },
+      "ar2en": {
+        "n": 185,
+        "hits": 146,
+        "accuracy": 0.7891891891891892
+      },
+      "en2ar": {
+        "n": 302,
+        "hits": 269,
+        "accuracy": 0.890728476821192
+      },
+      "en2ar_critical": {
+        "n": 54,
+        "hits": 46,
+        "accuracy": 0.8518518518518519
+      },
+      "particle": {
+        "n": 118,
+        "hits": 100,
+        "accuracy": 0.847457627118644
+      },
+      "singleton": {
+        "n": 74,
+        "hits": 58,
+        "accuracy": 0.7837837837837838
+      }
+    }
+  },
+  {
+    "model": "gemini-3.6-flash",
+    "requests": 10,
+    "tokens_in": 13943,
+    "tokens_out": 7277,
+    "tokens_thinking": 0,
+    "cost_usd": 0.075492,
+    "report": {
+      "overall": {
+        "n": 487,
+        "hits": 383,
+        "accuracy": 0.7864476386036962
+      },
+      "ar2en": {
+        "n": 185,
+        "hits": 119,
+        "accuracy": 0.6432432432432432
+      },
+      "en2ar": {
+        "n": 302,
+        "hits": 264,
+        "accuracy": 0.8741721854304636
+      },
+      "en2ar_critical": {
+        "n": 54,
+        "hits": 44,
+        "accuracy": 0.8148148148148148
+      },
+      "particle": {
+        "n": 118,
+        "hits": 102,
+        "accuracy": 0.864406779661017
+      },
+      "singleton": {
+        "n": 74,
+        "hits": 52,
+        "accuracy": 0.7027027027027027
+      }
+    }
+  }
+]

@@ -1,0 +1,137 @@
+[
+  {
+    "model": "gemini-3.1-flash-lite",
+    "requests": 11,
+    "tokens_in": 17677,
+    "tokens_out": 12578,
+    "tokens_thinking": 0,
+    "cost_usd": 0.023286,
+    "report": {
+      "overall": {
+        "n": 487,
+        "hits": 417,
+        "accuracy": 0.8562628336755647
+      },
+      "ar2en": {
+        "n": 185,
+        "hits": 145,
+        "accuracy": 0.7837837837837838
+      },
+      "en2ar": {
+        "n": 302,
+        "hits": 272,
+        "accuracy": 0.9006622516556292
+      },
+      "en2ar_critical": {
+        "n": 54,
+        "hits": 49,
+        "accuracy": 0.9074074074074074
+      },
+      "particle": {
+        "n": 118,
+        "hits": 99,
+        "accuracy": 0.8389830508474576
+      },
+      "singleton": {
+        "n": 74,
+        "hits": 56,
+        "accuracy": 0.7567567567567568
+      }
+    },
+    "failure_diagnostic": {
+      "total_failed": 70,
+      "near_miss": 47,
+      "far_miss": 23
+    }
+  },
+  {
+    "model": "gemini-3.5-flash-lite",
+    "requests": 11,
+    "tokens_in": 17677,
+    "tokens_out": 15341,
+    "tokens_thinking": 0,
+    "cost_usd": 0.043656,
+    "report": {
+      "overall": {
+        "n": 487,
+        "hits": 411,
+        "accuracy": 0.8439425051334702
+      },
+      "ar2en": {
+        "n": 185,
+        "hits": 147,
+        "accuracy": 0.7945945945945946
+      },
+      "en2ar": {
+        "n": 302,
+        "hits": 264,
+        "accuracy": 0.8741721854304636
+      },
+      "en2ar_critical": {
+        "n": 54,
+        "hits": 46,
+        "accuracy": 0.8518518518518519
+      },
+      "particle": {
+        "n": 118,
+        "hits": 102,
+        "accuracy": 0.864406779661017
+      },
+      "singleton": {
+        "n": 74,
+        "hits": 59,
+        "accuracy": 0.7972972972972973
+      }
+    },
+    "failure_diagnostic": {
+      "total_failed": 76,
+      "near_miss": 58,
+      "far_miss": 18
+    }
+  },
+  {
+    "model": "gemini-3.6-flash",
+    "requests": 6,
+    "tokens_in": 10177,
+    "tokens_out": 4396,
+    "tokens_thinking": 0,
+    "cost_usd": 0.048236,
+    "report": {
+      "overall": {
+        "n": 487,
+        "hits": 241,
+        "accuracy": 0.4948665297741273
+      },
+      "ar2en": {
+        "n": 185,
+        "hits": 146,
+        "accuracy": 0.7891891891891892
+      },
+      "en2ar": {
+        "n": 302,
+        "hits": 95,
+        "accuracy": 0.31456953642384106
+      },
+      "en2ar_critical": {
+        "n": 54,
+        "hits": 23,
+        "accuracy": 0.42592592592592593
+      },
+      "particle": {
+        "n": 118,
+        "hits": 98,
+        "accuracy": 0.8305084745762712
+      },
+      "singleton": {
+        "n": 74,
+        "hits": 40,
+        "accuracy": 0.5405405405405406
+      }
+    },
+    "failure_diagnostic": {
+      "total_failed": 246,
+      "near_miss": 29,
+      "far_miss": 217
+    }
+  }
+]

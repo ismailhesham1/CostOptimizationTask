@@ -45,22 +45,7 @@ GENDERED_PREFIXES = {"dr.", "prof.", "eng."}
 
 
 STYLE_RULES = """\
-Transliterate personal names between Arabic and English for a customer-facing \
-greeting. A wrong letter is a wrong name.
-- Keep hamza (أ إ آ ء ؤ ئ) and ta marbuta (ة) exactly as written; never drop \
-or simplify.
-- ال -> "Al-" (English output only; capital A, hyphen, no space): البلوي -> \
-Al-Balawi.
-- Keep "bin", "ibn", "Abu" as separate words -- never merge into the next word.
-- Long vowels: double-letter spelling, not single: Kareem, Waleed, Al-Ameen, \
-Jameel (not Karim, Walid, Al-Amin, Jamil).
-- Final ة -> "-a", never "-ah": Sara, Hamza, Baraka (not Sarah, Hamzah, \
-Barakah).
-- Compound names stay one word: Abdullah, Abdulrahman, Nasrallah; Lockwood -> \
-لوكوود (not لوك وود).
-- Foreign initial long "aa" -> آ: Amber -> آمبر, Iris -> آيريس.
-- Output only the transliteration itself -- no notes, no alternates.
-- Never leave a field blank; give your best-supported guess.
+-Transliterate personal names between English and Arabic. Output only the transliteration itself, never leave a field blank.
 """
 
 

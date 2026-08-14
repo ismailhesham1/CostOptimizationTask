@@ -8,7 +8,7 @@ import os
 import time
 
 from preprocess import (norm_key, load_cache, save_cache, MODEL_NAME,
-                          RESPONSE_SCHEMA, MAX_OUTPUT_TOKENS)
+                          response_schema_for, MAX_OUTPUT_TOKENS)
 
 
 PRICE_IN = 0.25
@@ -69,15 +69,18 @@ def run_batch(client, jsonl_path, direction):
 
 
 def run_sync(client, direction, chunks):
-    """chunks: {chunk_index_str: {id_str: {norm_key, src, slot}}}. Rebuilds
-    each chunk's prompt and calls generate_content directly -- used when
-    batches.create is denied at the project level."""
+    """chunks: {chunk_index_str: {id_str: {norm_key, src, slot,
+    known_gender}}}. Rebuilds each chunk's prompt and calls
+    generate_content directly -- used when batches.create is denied at the
+    project level. known_gender may be absent on older/retry chunk dicts
+    (treated as None, i.e. "ask the LLM") rather than raising."""
     from preprocess import build_prompt
     out = {}
     usage = []
     for ci, items in chunks.items():
         ordered = sorted(items.items(), key=lambda kv: int(kv[0]))
-        request_items = [(int(i), v["src"], v["slot"]) for i, v in ordered]
+        request_items = [(int(i), v["src"], v["slot"], v.get("known_gender"))
+                           for i, v in ordered]
         prompt = build_prompt(direction, request_items)
         key = f"{direction}-{ci}"
         try:
@@ -85,7 +88,7 @@ def run_sync(client, direction, chunks):
                 model=MODEL_NAME, contents=prompt,
                 config={"thinkingConfig": {"thinkingLevel": "MINIMAL"},
                          "responseMimeType": "application/json",
-                         "responseSchema": RESPONSE_SCHEMA,
+                         "responseSchema": response_schema_for(direction),
                          "maxOutputTokens": MAX_OUTPUT_TOKENS})
             out[key] = json.loads(resp.text)
             u = resp.usage_metadata
@@ -126,6 +129,26 @@ def main():
             gender[norm_key(src)] = g
             gender[norm_key(gtext)] = g
 
+    def iter_results(resp):
+        """resp["results"] is a list of [id, text, gender] triples for
+        en2ar, or [id, text] pairs for ar2en -- ar2en has no gender slot at
+        all (RESPONSE_SCHEMA_AR2EN, Task #9), since AR_TO_EN_PREFIX already
+        disambiguates gender from the Arabic prefix word itself and never
+        reads this field. Yields (rid, item_dict) so the rest of this file
+        can keep using absorb() unchanged either way (item.get("gender")
+        naturally returns None for a 2-element entry). A malformed entry
+        (not exactly 2 or 3 elements) is skipped, not raised -- it falls
+        through to the same missing-id retry path as a genuinely absent
+        id, rather than crashing the whole chunk."""
+        for entry in resp.get("results", []):
+            if not isinstance(entry, list) or len(entry) not in (2, 3):
+                continue
+            rid, text = entry[0], entry[1]
+            item = {"text": text}
+            if len(entry) == 3:
+                item["gender"] = entry[2]
+            yield str(rid), item
+
     all_usage = [] 
 
     for direction, dinfo in plan["directions"].items():
@@ -148,8 +171,7 @@ def main():
                 leftover.update({v["norm_key"]: v for v in items.values()})
                 continue
             seen = set()
-            for item in resp.get("results", []):
-                rid = str(item.get("id"))
+            for rid, item in iter_results(resp):
                 meta = items.get(rid)
                 if meta is None:
                     continue
@@ -181,8 +203,7 @@ def main():
                 resp = retry_responses.get(f"{direction}-{ci}")
                 if not resp:
                     continue
-                for item in resp.get("results", []):
-                    rid = str(item.get("id"))
+                for rid, item in iter_results(resp):
                     meta = group_items.get(rid)
                     if meta is None:
                         continue

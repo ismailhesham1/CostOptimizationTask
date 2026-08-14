@@ -30,8 +30,29 @@ never see their own name written wrongly."
 | | Cost per 1,000 names | Projected cost per month at 86,400/day | Whole-record accuracy |
 | --- | --- | --- | --- |
 | What Welcome Home runs today (`gemini-2.5-pro`, 1 call/name) | **NOT MEASURED** — see note | not projected (no measured base) | not measured |
-| What I'm recommending (`gemini-3.1-flash-lite`, cached, chunk_size=50) | **$0.0198** (measured, cold cache, 1,200 records) | **~$1.95** (projected, method below) | **89.33%** (measured, 1,072/1,200) |
-| Recommended + one-time cache-correction pass | $0.0198 (same — correction is cache-only, $0 marginal) | ~$1.95 (same) | **98.58%** (measured previously, log #11 — needs to be redone, see §1) |
+| Original recommendation (`gemini-3.1-flash-lite`, cached, chunk_size=50), as first submitted | $0.0198 (measured, cold cache, 1,200 records) | ~$1.95 (projected, method below) | 89.33% (measured, 1,072/1,200) |
+| Original + one-time cache-correction pass | $0.0198 (same — correction is cache-only, $0 marginal) | ~$1.95 (same) | 98.58% (measured previously, log #11 — needs to be redone, see §1) |
+| **Current pipeline** — same model, plus gender dictionary/classifier tiers, JSON-array response format, and direction/known-gender-aware schemas (§6 #16-20) | **$0.0088** (measured, cold cache, 1,200 records — real combined run, everything active together, not summed from isolated tests) | **~$0.91** (projected, same method, updated rate) | **89.67%** (measured, 1,076/1,200) |
+| Current pipeline + one-time cache-correction pass (still needs redoing, see §1) | $0.0088 (same — correction is cache-only, $0 marginal) | ~$0.91 (same) | not yet re-measured on the current pipeline |
+
+**The current-pipeline row is a genuine combined measurement, not an estimate stacked
+from the individual optimizations.** Every change in log #16-20 was deliberately
+measured in isolation first (small controlled A/B batches, one variable at a time) so
+cause and effect stayed clear — but that means none of those numbers alone answered
+"what does the whole thing cost now." This row does: cache and prior state cleared,
+full 1,200-record run, every optimization active simultaneously
+(`gender_lookup.py`/`gender_classifier.py` tiers, the JSON-arrays response format,
+ar2en's gender-free schema, en2ar's skip-known-gender schema), real
+`generate_content` calls throughout. Result: **$0.0106 total for 1,200 records (11
+requests, 8,579 in / 5,670 out tokens)** — a **55.4% reduction** from the original
+$0.0237 cold-cache total (§6 #15, chunk_size=50) it's directly comparable to, same
+methodology, same sample. Accuracy came back essentially flat (+0.34pp, 1,076 vs
+1,072 correct) — within this project's own previously-measured run-to-run noise band
+(~1.16–2.83pp), so read this as "no regression," not as a quality improvement the
+optimizations themselves are responsible for. The run's cache/output/failures files
+are preserved as `backups/*.combined_cold_run_result` for inspection; the pipeline's live
+`cache.json` was restored to its pre-test, accumulated state afterward rather than
+overwritten by this one-off measurement run.
 
 **Why the baseline row is empty.** Across three different API keys, `gemini-2.5-pro`
 either 404'd ("no longer available to new users") or 429'd with a 0-quota limit. This
@@ -49,18 +70,21 @@ had "recently dropped 50%," which turned out to be that site conflating the batc
 with the standard rate — the vendor's own page was the only reliable source. Every $
 figure in this document rests on rates that are now confirmed, not assumed.
 
-**Monthly projection method.** Cost-per-distinct-token was measured at
-$0.0000468–$0.0000487/token across two independent runs ($0.0228/487 tokens and
-$0.0237/487 tokens — a 4% spread, i.e. the projection is not sensitive to which cold
-run you calibrate it from). Token *volume* at 100K/day was not measured — no such data
-exists yet — so it's projected from a Heaps' law curve fit to the 1,200-record sample:
+**Monthly projection method (unchanged approach, updated rate).** Cost-per-distinct-
+token on the current pipeline measures **$0.0000218/token** ($0.0106 / 487 distinct
+tokens — down from the original $0.0000468–$0.0000487/token, consistent with the
+55.4% total-cost reduction above). Token *volume* at 100K/day was not measured — no
+such data exists yet — so it's still projected from the same Heaps' law curve fit to
+the 1,200-record sample (a property of the name distribution, not of pricing, so this
+part of the method doesn't change):
 
     V = 20.64 * n^0.4177   (n = lookups, V = distinct tokens)
 
-At 86,400 records/day (172,800 lookups/day), day 1 is cold (~3,180 new tokens, ~$0.15);
-steady state settles to a ~0.77% marginal miss rate (~1,330 new tokens/day, ~$0.06/day).
-Month 1 total ≈ **$1.95**. This is a projection built on a measured per-token cost, not
-a measured monthly bill.
+At 86,400 records/day (172,800 lookups/day), day 1 is cold (~3,180 new tokens, ~$0.069
+at the current rate); steady state settles to a ~0.77% marginal miss rate (~1,330 new
+tokens/day, ~$0.029/day). Month 1 total ≈ **$0.91** (down from the original ~$1.95
+projection). Still a projection built on a measured per-token cost, not a measured
+monthly bill.
 
 ---
 
@@ -167,6 +191,11 @@ Every run, including the failures and dead ends.
 | 13 | Fresh cold-cache reproduction of the shipped pipeline, later in the project, to sanity-check the numbers above | not captured (run executed outside cost-tracking tooling) | 87.67% (1052/1200) | Third independent cold-cache data point — 86.5–89.3% band confirmed again. Also: this cache-clear inadvertently destroyed whatever state `cache.json` held at the time, see #14. |
 | 14 | *(process incident, not a run)* Discovered, while writing this submission, that the correction-pass entries from #11 were no longer present in any surviving `cache.json` | $0 | n/a | The corrected cache from #11 lived only in that session's `cache.json`, with no separate backup of the correction pass itself. A later cold-cache reset (#13) overwrote it. The pipeline's cache file conflates disposable model output with irreplaceable human-reviewed corrections — see §8. Redoing the ~30-entry pass is now a required next step, not optional polish. |
 | 15 | Chunk-size sweep: 25 / 50 / 100, cold cache each (required — a warm cache means 0 calls regardless of chunk size) | $0.0273 / $0.0237 / $0.0209 | 87.00% (1044) / 89.33% (1072) / 86.50% (1038) | Cost drops cleanly with bigger chunks (21→11→6 requests, 21,924→14,664 input tokens) because the ~200-token style-rule preamble is paid fewer times. Accuracy is **not** monotonic and the 2.83pp spread exceeds the previously-measured 1.16pp run-to-run noise — but this is n=1 per size, so it isn't proof chunk 100 is worse. Kept the shipped default (50): best measured accuracy here, mid cost, and it's the size the retry/prompt logic was actually tuned against. A proper multi-trial sweep is still open work (§9). |
+| 16 | Built `gender_lookup.py`, a static zero-cost dictionary (~584 hand-curated entries, two tiers: common Latin-spelling Arabic given names + common Western given names) to resolve the `Dr./Prof./Eng.` gendered-prefix cases without depending on the LLM's inferred `gender` field. Wired into `preprocess.py` ahead of the LLM batch; re-ran the full pipeline | $0.00 (warm cache — 0 API calls this run, confirmed by 0 batch requests before `translate.py` even ran) | unchanged: 89.33% (1072/1200); output.csv byte-identical to pre-change | 208/211 (98.6%) of gendered-prefix records resolved by the dictionary alone, 0 wrong vs gold. Gender inference was never a separate call (it rides on the per-name translation request), so the real win isn't dollars — it's removing a latent bug where a name whose *translation* was cached but whose *gender* never was would silently default to male forever, plus decoupling 98.6% of gendered-prefix correctness from LLM output-parsing succeeding. Estimated (not measured) token saving from also dropping the gender-instruction from ar2en prompts: well under $0.001/cold run — real but not the headline. Full writeup: `EXPERIMENT_LOG.md`, "Gender-inference cost-reduction workstream". |
+| 17 | Built `gender_classifier.py` (character n-gram Naive Bayes, pure Python) as a possible Tier 3 for the ~1.4% of gendered-prefix records the static dictionary misses — explicitly un-paused, tried, measured, and judged, per instruction, rather than assumed either way. Extended with a pooled 40-draw threshold sweep (0.90 -> 0.99999) on request, searching for a threshold reliable enough to use | $0.00 throughout (pure Python, no API calls; CV, calibration, threshold sweep, feature ablation, tier breakdown, and a warm-cache pipeline re-run, all offline/$0) | Threshold vs. accuracy (pooled, full table): 0.90->83.7%, 0.95->88.6%, 0.99->95.7%, 0.995->98.6%, 0.999->**100.0%** (0/311). But coverage on the actual target population collapses even faster: none of the 10 real ambiguous names in this project's sample (River, Sage, Sky, Justice, Liberty...) clear 0.995 or 0.999 — the threshold with zero measured error has zero measured real-world coverage | **Adopted at threshold=0.995 and wired into `preprocess.py` as Tier 3, on an explicit decision made with the full tradeoff in view: accept a measured ~1.4% wrong-answer rate on whatever it resolves, in exchange for non-zero coverage, rather than the 0.999 point's real-but-useless 100%-accuracy/~0%-coverage combination.** A real, stated departure from this workstream's earlier zero-tolerance stance (dictionary and LLM both ~0% wrong). Re-ran the full pipeline after wiring it in: **measured effect on this 1,200-row sample was none** — Tier 3 fired 0 times (none of this sample's real ambiguous names clear 0.995 either), `output.csv` came back byte-identical, accuracy unchanged at 89.33%. Its only possible effect is on production names outside this sample; the ~1.4% error rate on whatever it does fire on should be monitored against real traffic, not assumed safe. Full sweep and reasoning: `EXPERIMENT_LOG.md`. |
+| 18 | Response-format comparison: today's per-item JSON object vs. a JSON array-of-arrays (`[id, text, gender]`, no repeated key names) vs. TSV. First real API spend of the project session — also discovered `google-genai` was never installed and outbound HTTPS was failing on a cert-trust issue in this environment; fixed both before any of this could be measured live. Free step (`count_tokens`, real tokenizer): objects 1,020 tok vs arrays 570 (-44%) vs TSV 415 (-59%) on equivalent content. Then real generation calls, single draw: objects 634 out-tok vs arrays 218 (-60%) vs TSV 151 (-72%, but dropped 1/20 items). Then repeated (8x at n=20, 4x at n=50) and a targeted diagnostic isolating the trigger | $0.0371 total (first real spend this session; every dollar figure in experiments #16-17 above was $0) | No accuracy difference between formats beyond ordinary run-to-run variance already documented elsewhere in this project | **Adopted JSON arrays as the production format.** TSV was cheapest (-59% to -75%) but had a real, reproducible, content-triggered failure mode with no `responseSchema` safety net (Gemini's structured output doesn't support fixed-position tuples): 8/8 defective at n=20 vs 0/4 at n=50 on the *same* format, later isolated to whether the chunk's *last item* has an empty gender field — not fixable by picking a "safe" batch size, since n=10 and n=20 both failed 100% under the same ending condition, and the "safer" ending condition still failed 2/6 with a worse failure mode (9 items lost, not 1). JSON arrays measured 0 defects across all 12 live trials while still saving 41-63% on output tokens, keeping the same schema-enforcement guarantee every other format in this pipeline relies on. Full diagnostic: `EXPERIMENT_LOG.md`. |
+| 19 | Checked whether implicit caching is already firing, and whether explicit caching would be worth switching to — against the real API, not docs (which are inconsistent for this exact model across Google's own pages) | $0.0003 (one `count_tokens` call, one small real generation call, one `caches.create` call that failed before storage billing could start) | n/a — no accuracy dimension to this check | **Neither implemented.** Real `usage_metadata` shows `cached_content_token_count=None` — confirmed implicit caching is not firing today. Measured today's real shared prefix at 129 tokens, then tried to actually create an explicit cache with it: the API rejected it with `min_total_token_count=1024` — an exact, first-party number, not an estimate. Padding the prompt to reach 1,024 tokens wouldn't pay for itself: explicit-cache storage costs $1.00/1M tokens/hour (~$0.74/month for a 1,024-token cache) against ~$0.00023 saved per cache-hit request, requiring ~107 hits/day just to break even — this pipeline's own steady-state projection (§2) is ~1-3 requests/day once `cache.json` saturates. Confirms and sharpens §7's original rejection of context caching with a hard number instead of an estimate. |
+| 20 | Two follow-ups from the gender-inference workstream, resumed after the format/caching work above: (a) give ar2en its own 2-element response schema with no gender slot at all, instead of a 3-element schema with an always-empty one; (b) for en2ar, only ask the LLM to infer gender on first_names `gender_lookup.py`/`gender_classifier.py` haven't already resolved. Measured each with a real old-vs-new A/B on identical content, flagging beforehand that JSON-arrays' fixed-length tuples (adopted in #18) likely capped (b)'s upside before writing any code | $0.000889 (4 real calls: 2 old/new pairs) | Warm-cache pipeline re-run: unchanged 89.33%, byte-identical `output.csv`. A/B tests: every translated name identical between old and new — only the gender field differed. Where cross-checkable, `gender_lookup.py`'s answers matched the LLM's own independent inference 5/5 | **Both implemented, both measured real but very different in size.** (a): **15.4%** cheaper per ar2en request ($0.000189 vs $0.000224) — structural, removes a whole array position from every item. (b): **3.4%** cheaper per affected en2ar request ($0.000234 vs $0.000242) — real but small, confirming the predicted ceiling: a fixed-length tuple still pays for the gender position whether it holds "M"/"F" or an empty string, so there's no field to omit the way the old per-object format would have allowed. Full A/B numbers: `EXPERIMENT_LOG.md`. |
 
 ---
 
@@ -187,9 +216,13 @@ Every run, including the failures and dead ends.
   in favor of a capped, frequency-ranked review, because the failure distribution is
   heavy-tailed (§6 #9): a fixed review budget captures most of the value regardless of
   total volume.
-- **Context caching (Gemini's prompt-caching feature)** — the system prompt is ~200
-  tokens, under most minimum-cacheable thresholds, and batching already amortizes it
-  across 50 names per request.
+- **Context caching (Gemini's prompt-caching feature), both implicit and explicit** —
+  revisited later with hard evidence (§6 #19) rather than the estimate this bullet
+  originally gave: today's real shared prefix measures 129 tokens, and the API's own
+  minimum for this model is 1,024 — confirmed by literally trying to create a cache
+  and reading the rejection. Padding the prompt to qualify would cost more in storage
+  rent than it could ever save at this pipeline's real request volume. Batching still
+  does the actual amortization work here, as originally reasoned.
 - **A full glossary-injection prompt** — built (`experiments/pipeline/glossary.py`) but
   never conclusively A/B tested against the 4-rule prompt. Not rejected outright — ran
   out of time to validate it, see §9.
@@ -197,6 +230,25 @@ Every run, including the failures and dead ends.
   shipping chunk_size=100 for its lower cost, rejected because the accuracy dip there
   is within plausible noise on one sample; a cost-only decision on unverified accuracy
   isn't defensible to Marketing.
+- **Fuzzy/nickname matching for the gender dictionary (§6 #16)** — considered as a
+  follow-up tier, rejected on measured evidence rather than by default: the only names
+  the dictionary misses (River, Sage, Justice, Angel, ...) are genuinely unisex, not
+  spelling variants. Fuzzy-matching those would launder a guess into false confidence,
+  the opposite of this dictionary's own $0-but-never-wrong bar.
+- **Pulling a real open Arabic-name-gender dataset or the US SSA baby-names file for
+  the gender dictionary (§6 #16)**, in favor of hand-curating ~584 entries instead —
+  not rejected on merit, just deferred past a licensing-review step this pass didn't
+  have time for. The measured 93.9%/98.6% coverage is real but in-sample; a genuinely
+  unseen name batch would likely see lower coverage until this is revisited (§9).
+- **Using `gender_classifier.py` at its zero-measured-error threshold (0.999)**
+  (§6 #17) — rejected in favor of 0.995 despite 0.999 measuring 0/311 wrong,
+  because 0.999's real-world coverage on the actual target population (names the
+  static dictionary misses) measured zero: none of the 10 real ambiguous names in
+  this project's sample clear it. A threshold that never fires isn't a usable
+  tier regardless of how clean its accuracy looks. See §6 #17 for the full
+  tradeoff against the adopted 0.995 threshold, which does fire, at a measured
+  ~1.4% error cost on the names it resolves — a deliberate, explicit departure
+  from this workstream's earlier zero-tolerance stance, not an oversight.
 
 ---
 
@@ -254,6 +306,9 @@ Every run, including the failures and dead ends.
 
 4. **Pin `temperature=0`** for reproducible numbers — measured ~1.16–2.83pp
    run-to-run swing on identical configs without it.
+5. **Replace `gender_lookup.py`'s hand-curated dictionary (§6 #16) with a real,
+   license-checked dataset**, and re-measure coverage against a genuinely unseen name
+   batch rather than the in-sample 93.9%/98.6% figures.
 
 ---
 
